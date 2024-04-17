@@ -2,7 +2,9 @@
 
 ![workflow](https://github.com/tomsilver/relational-structs/actions/workflows/ci.yml/badge.svg)
 
-A basic starter for Python packages with GitHub continuous integration.
+Data structures for relational state and action spaces in robot environments.
+
+Derived from [predicators](https://github.com/Learning-and-Intelligent-Systems/predicators).
 
 ## Requirements
 

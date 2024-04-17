@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "relational_structs"
 version = "0.1.0"
-description = "A basic starter for Python packages."
+description = "Data structures for relational state and action spaces in robot environments."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
