@@ -11,6 +11,7 @@ requires-python = ">=3.9"
 dependencies = [
    "matplotlib",
    "numpy",
+   "tabulate",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +23,7 @@ develop = [
     "pylint>=2.14.5",
     "pytest-pylint>=0.18.0",
     "pytest>=7.2.2",
+    "typing-extensions",
 ]
 
 [tool.setuptools.packages.find]
@@ -51,5 +53,6 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = [
     "matplotlib.*",
+    "tabulate.*",
 ]
 ignore_missing_imports = true
