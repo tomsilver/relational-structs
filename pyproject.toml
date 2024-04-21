@@ -7,8 +7,9 @@ name = "relational_structs"
 version = "0.1.0"
 description = "Data structures for relational state and action spaces in robot environments."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
+   "gym==0.26.0",
    "matplotlib",
    "numpy",
    "tabulate",
@@ -34,10 +35,10 @@ relational_structs = ["py.typed"]
 
 [tool.black]
 line-length = 88
-target-version = ["py39"]
+target-version = ["py310"]
 
 [tool.isort]
-py_version = 39
+py_version = 310
 profile = "black"
 multi_line_output = 2
 skip_glob = ["venv/*"]
