@@ -272,6 +272,7 @@ class Option:
     memory: OptionMemory = field(repr=False)
 
 
+# Type aliases.
 Array: TypeAlias = NDArray[np.float32]
 Action: TypeAlias = Any
 Parameters: TypeAlias = Any
@@ -280,3 +281,6 @@ OptionMemory: TypeAlias = Dict
 ParameterizedPolicy: TypeAlias = Callable[[State, Parameters, OptionMemory], Action]
 ParameterizedInitiable: TypeAlias = Callable[[State, Parameters, OptionMemory], bool]
 ParameterizedTerminal: TypeAlias = Callable[[State, Parameters, OptionMemory], bool]
+
+# Constants.
+DefaultState = State({})
