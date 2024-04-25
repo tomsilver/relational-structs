@@ -1,3 +1,6 @@
+"""Allow data structures to be imported from package directly."""
+
+# pylint: disable=unused-import
 from relational_structs.objects import Object, Type, Variable
 from relational_structs.options import (
     Option,

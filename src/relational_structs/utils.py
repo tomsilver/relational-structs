@@ -1,6 +1,6 @@
 """Utilities."""
 
-from typing import Any, Collection, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 
