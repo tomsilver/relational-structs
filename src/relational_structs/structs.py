@@ -21,6 +21,7 @@ from typing import (
 
 import numpy as np
 from gym.spaces import Space
+from multimethod import multimethod
 from numpy.typing import NDArray
 from tabulate import tabulate
 
@@ -284,55 +285,6 @@ class Option:
     memory: OptionMemory = field(repr=False)
 
 
-@dataclass(frozen=True, order=True, repr=False)
-class Predicate:
-    """Struct defining a predicate (a lifted classifier over states)."""
-
-    name: str
-    types: Sequence[Type]
-    # The classifier takes in a complete state and a sequence of objects
-    # representing the arguments. These objects should be the only ones
-    # treated "specially" by the classifier.
-    _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)
-
-    @cached_property
-    def _hash(self) -> int:
-        return hash(str(self))
-
-    @cached_property
-    def pddl_str(self) -> str:
-        """Get a string representation suitable for writing out to PDDL."""
-        if self.arity == 0:
-            return f"({self.name})"
-        vars_str = " ".join(f"?x{i} - {t.name}" for i, t in enumerate(self.types))
-        return f"({self.name} {vars_str})"
-
-    @cached_property
-    def arity(self) -> int:
-        """The arity of this predicate (number of arguments)."""
-        return len(self.types)
-
-    def holds(self, state: State, objects: Sequence[Object]) -> bool:
-        """Public method for calling the classifier.
-
-        Performs type checking first.
-        """
-        assert len(objects) == self.arity
-        for obj, pred_type in zip(objects, self.types):
-            assert isinstance(obj, Object)
-            assert obj.is_instance(pred_type)
-        return self._classifier(state, objects)
-
-    def __str__(self) -> str:
-        return self.pddl_str
-
-    def __hash__(self) -> int:
-        return self._hash
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
 _TypedEntityTypeVar = TypeVar("_TypedEntityTypeVar", bound=_TypedEntity)
 
 
@@ -426,6 +378,67 @@ class GroundAtom(_Atom[Object]):
         return self.predicate.holds(state, self.objects)
 
 
+@dataclass(frozen=True, order=True, repr=False)
+class Predicate:
+    """Struct defining a predicate (a lifted classifier over states)."""
+
+    name: str
+    types: Sequence[Type]
+    # The classifier takes in a complete state and a sequence of objects
+    # representing the arguments. These objects should be the only ones
+    # treated "specially" by the classifier.
+    _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)
+
+    @multimethod
+    def __call__(self, entities: Sequence[_TypedEntity]) -> Any:
+        raise NotImplementedError(f"Cannot call predicate with {entities}")
+
+    @__call__.register
+    def _(self, entities: Sequence[Variable]) -> LiftedAtom:
+        return LiftedAtom(self, entities)
+
+    @__call__.register
+    def _(self, entities: Sequence[Object]) -> GroundAtom:
+        return GroundAtom(self, entities)
+
+    @cached_property
+    def _hash(self) -> int:
+        return hash(str(self))
+
+    @cached_property
+    def pddl_str(self) -> str:
+        """Get a string representation suitable for writing out to PDDL."""
+        if self.arity == 0:
+            return f"({self.name})"
+        vars_str = " ".join(f"?x{i} - {t.name}" for i, t in enumerate(self.types))
+        return f"({self.name} {vars_str})"
+
+    @cached_property
+    def arity(self) -> int:
+        """The arity of this predicate (number of arguments)."""
+        return len(self.types)
+
+    def holds(self, state: State, objects: Sequence[Object]) -> bool:
+        """Public method for calling the classifier.
+
+        Performs type checking first.
+        """
+        assert len(objects) == self.arity
+        for obj, pred_type in zip(objects, self.types):
+            assert isinstance(obj, Object)
+            assert obj.is_instance(pred_type)
+        return self._classifier(state, objects)
+
+    def __str__(self) -> str:
+        return self.pddl_str
+
+    def __hash__(self) -> int:
+        return self._hash
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
 _AtomTypeVar = TypeVar("_AtomTypeVar", bound=_Atom)
 
 
@@ -462,7 +475,7 @@ class Operator(Generic[_TypedEntityTypeVar, _AtomTypeVar]):
     :parameters ({params_str})
     :precondition (and {preconds_str})
     :effect (and {effects_str})
-  )"""
+)"""
 
     @cached_property
     def short_str(self) -> str:
@@ -497,7 +510,7 @@ class LiftedOperator(Operator[Variable, LiftedAtom]):
     """Struct defining a lifted symbolic operator (as in STRIPS)."""
 
     @lru_cache(maxsize=None)
-    def ground(self, objects: Tuple[Object]) -> GroundSTRIPSOperator:
+    def ground(self, objects: Tuple[Object]) -> GroundOperator:
         """Ground into a _GroundSTRIPSOperator, given objects.
 
         Insist that objects are tuple for hashing in cache.
@@ -509,13 +522,13 @@ class LiftedOperator(Operator[Variable, LiftedAtom]):
         preconditions = {atom.ground(sub) for atom in self.preconditions}
         add_effects = {atom.ground(sub) for atom in self.add_effects}
         delete_effects = {atom.ground(sub) for atom in self.delete_effects}
-        return GroundSTRIPSOperator(
+        return GroundOperator(
             self.name, list(objects), preconditions, add_effects, delete_effects, self
         )
 
 
 @dataclass(frozen=True, repr=False, eq=False)
-class GroundSTRIPSOperator(Operator[Object, GroundAtom]):
+class GroundOperator(Operator[Object, GroundAtom]):
     """A STRIPSOperator + objects."""
 
     parent: LiftedOperator
