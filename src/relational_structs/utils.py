@@ -4,7 +4,8 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from relational_structs.structs import Object, State
+from relational_structs.objects import Object
+from relational_structs.state import State
 
 
 def create_state_from_dict(
