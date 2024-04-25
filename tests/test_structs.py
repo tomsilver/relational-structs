@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 
-from relational_structs.spaces import ObjectSequenceBoxSpace
-from relational_structs.structs import (
+from relational_structs import (
     DefaultState,
     GroundOperator,
     LiftedOperator,
     Object,
+    ObjectSequenceBoxSpace,
     Option,
     ParameterizedOption,
     Predicate,

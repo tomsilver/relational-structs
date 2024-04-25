@@ -5,7 +5,8 @@ from typing import Any, Collection, List, Sequence, Set, cast
 import numpy as np
 from gym.spaces import Box, Space
 
-from relational_structs.structs import Object, State, Type
+from relational_structs.objects import Object, Type
+from relational_structs.state import State
 
 
 class ObjectCentricStateSpace(Space):

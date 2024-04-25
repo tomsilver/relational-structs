@@ -2,9 +2,7 @@
 
 import pytest
 
-from relational_structs import utils
-from relational_structs.spaces import ObjectCentricStateSpace
-from relational_structs.structs import Type
+from relational_structs import ObjectCentricStateSpace, Type, utils
 
 
 def test_object_centric_state_space():
