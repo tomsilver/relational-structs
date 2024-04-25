@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property, lru_cache
+from graphlib import TopologicalSorter
 from typing import (
     Any,
-    Callable,
     Collection,
     Dict,
     Generic,
@@ -18,9 +18,17 @@ from typing import (
 )
 
 from multimethod import multimethod
+from pyperplan.pddl.parser import (
+    TraversePDDLDomain,
+    TraversePDDLProblem,
+    parse_domain_def,
+    parse_lisp_iterator,
+    parse_problem_def,
+)
+from pyperplan.pddl.pddl import Domain as PyperplanDomain
+from pyperplan.pddl.pddl import Type as PyperplanType
 
 from relational_structs.objects import Object, Type, TypedEntity, Variable
-from relational_structs.state import State
 
 _TypedEntityTypeVar = TypeVar("_TypedEntityTypeVar", bound=TypedEntity)
 
@@ -110,10 +118,6 @@ class GroundAtom(_Atom[Object]):
         assert set(self.objects).issubset(set(sub.keys()))
         return LiftedAtom(self.predicate, [sub[o] for o in self.objects])
 
-    def holds(self, state: State) -> bool:
-        """Check whether this ground atom holds in the given state."""
-        return self.predicate.holds(state, self.objects)
-
 
 @dataclass(frozen=True, order=True, repr=False)
 class Predicate:
@@ -121,10 +125,6 @@ class Predicate:
 
     name: str
     types: Sequence[Type]
-    # The classifier takes in a complete state and a sequence of objects
-    # representing the arguments. These objects should be the only ones
-    # treated "specially" by the classifier.
-    _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)
 
     @multimethod
     def __call__(self, entities: Sequence[TypedEntity]) -> Any:
@@ -154,17 +154,6 @@ class Predicate:
     def arity(self) -> int:
         """The arity of this predicate (number of arguments)."""
         return len(self.types)
-
-    def holds(self, state: State, objects: Sequence[Object]) -> bool:
-        """Public method for calling the classifier.
-
-        Performs type checking first.
-        """
-        assert len(objects) == self.arity
-        for obj, pred_type in zip(objects, self.types):
-            assert isinstance(obj, Object)
-            assert obj.is_instance(pred_type)
-        return self._classifier(state, objects)
 
     def __str__(self) -> str:
         return self.pddl_str
@@ -271,6 +260,14 @@ class GroundOperator(Operator[Object, GroundAtom]):
     parent: LiftedOperator
 
 
+@lru_cache(maxsize=None)
+def _domain_str_to_pyperplan_domain(domain_str: str) -> PyperplanDomain:
+    domain_ast = parse_domain_def(parse_lisp_iterator(domain_str.split("\n")))
+    visitor = TraversePDDLDomain()
+    domain_ast.accept(visitor)
+    return visitor.domain
+
+
 @dataclass(frozen=True)
 class PDDLDomain:
     """A PDDL domain."""
@@ -283,8 +280,77 @@ class PDDLDomain:
     @classmethod
     def parse(cls, pddl_str: str) -> PDDLDomain:
         """Parse a domain from a string."""
-        # TODO
-        raise NotImplementedError("TODO")
+        # Let pyperplan do most of the heavy lifting.
+        pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_str)
+        domain_name = pyperplan_domain.name
+        pyperplan_types = pyperplan_domain.types
+        pyperplan_predicates = pyperplan_domain.predicates
+        pyperplan_operators = pyperplan_domain.actions
+        # Convert the pyperplan domain into our structs.
+        # Process the type hierarchy. Sort the types such that if X inherits from Y
+        # then X is after Y in the list (topological sort).
+        type_graph = {
+            t: {t.parent} for t in pyperplan_types.values() if t.parent is not None
+        }
+        sorted_types = list(TopologicalSorter(type_graph).static_order())
+        pyperplan_type_to_type: Dict[PyperplanType, Type] = {}
+        for pyper_type in sorted_types:
+            if pyper_type.parent is None:
+                assert pyper_type.name == "object"
+                parent = None
+            else:
+                parent = pyperplan_type_to_type[pyper_type.parent]
+            new_type = Type(pyper_type.name, [], parent)
+            pyperplan_type_to_type[pyper_type] = new_type
+        # Handle case where the domain is untyped.
+        # Pyperplan uses the object type by default.
+        if not pyperplan_type_to_type:
+            pyper_type = next(iter(pyperplan_types.values()))
+            new_type = Type(pyper_type.name, [], parent=None)
+            pyperplan_type_to_type[pyper_type] = new_type
+        # Convert the predicates.
+        predicate_name_to_predicate = {}
+        for pyper_pred in pyperplan_predicates.values():
+            name = pyper_pred.name
+            pred_types = [pyperplan_type_to_type[t] for _, (t,) in pyper_pred.signature]
+            predicate_name_to_predicate[name] = Predicate(name, pred_types)
+        # Convert the operators.
+        operators = set()
+        for pyper_op in pyperplan_operators.values():
+            name = pyper_op.name
+            parameters = [
+                Variable(n, pyperplan_type_to_type[t]) for n, (t,) in pyper_op.signature
+            ]
+            param_name_to_param = {p.name: p for p in parameters}
+            preconditions = {
+                LiftedAtom(
+                    predicate_name_to_predicate[a.name],
+                    [param_name_to_param[n] for n, _ in a.signature],
+                )
+                for a in pyper_op.precondition
+            }
+            add_effects = {
+                LiftedAtom(
+                    predicate_name_to_predicate[a.name],
+                    [param_name_to_param[n] for n, _ in a.signature],
+                )
+                for a in pyper_op.effect.addlist
+            }
+            delete_effects = {
+                LiftedAtom(
+                    predicate_name_to_predicate[a.name],
+                    [param_name_to_param[n] for n, _ in a.signature],
+                )
+                for a in pyper_op.effect.dellist
+            }
+            strips_op = LiftedOperator(
+                name, parameters, preconditions, add_effects, delete_effects
+            )
+            operators.add(strips_op)
+        # Collect the final outputs.
+        types = set(pyperplan_type_to_type.values())
+        predicates = set(predicate_name_to_predicate.values())
+        return PDDLDomain(domain_name, operators, predicates, types)
 
     @cached_property
     def _hash(self) -> int:
@@ -353,10 +419,43 @@ class PDDLProblem:
     goal: Collection[GroundAtom]
 
     @classmethod
-    def parse(cls, pddl_str: str) -> PDDLProblem:
+    def parse(cls, pddl_problem_str: str, pddl_domain: PDDLDomain) -> PDDLProblem:
         """Parse a problem from a string."""
-        # TODO
-        raise NotImplementedError("TODO")
+        # Let pyperplan do most of the heavy lifting.
+        pddl_domain_str = str(pddl_domain)
+        pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_domain_str)
+        # Now that we have the domain, parse the problem.
+        lisp_iterator = parse_lisp_iterator(pddl_problem_str.split("\n"))
+        problem_ast = parse_problem_def(lisp_iterator)
+        problem_name = problem_ast.name
+        visitor = TraversePDDLProblem(pyperplan_domain)
+        problem_ast.accept(visitor)
+        pyperplan_problem = visitor.get_problem()
+        # Create the objects.
+        type_name_to_type = {t.name: t for t in pddl_domain.types}
+        object_name_to_obj = {
+            o: Object(o, type_name_to_type[t.name])
+            for o, t in pyperplan_problem.objects.items()
+        }
+        objects = set(object_name_to_obj.values())
+        # Create the initial state.
+        predicate_name_to_predicate = {p.name: p for p in pddl_domain.predicates}
+        init_atoms = {
+            GroundAtom(
+                predicate_name_to_predicate[a.name],
+                [object_name_to_obj[n] for n, _ in a.signature],
+            )
+            for a in pyperplan_problem.initial_state
+        }
+        # Create the goal.
+        goal = {
+            GroundAtom(
+                predicate_name_to_predicate[a.name],
+                [object_name_to_obj[n] for n, _ in a.signature],
+            )
+            for a in pyperplan_problem.goal
+        }
+        return PDDLProblem(pddl_domain.name, problem_name, objects, init_atoms, goal)
 
     @cached_property
     def _hash(self) -> int:
