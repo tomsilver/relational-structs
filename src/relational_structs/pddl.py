@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
 from graphlib import TopologicalSorter
 from typing import (
     Any,
+    Callable,
     Collection,
     Dict,
     Generic,
@@ -29,6 +30,7 @@ from pyperplan.pddl.pddl import Domain as PyperplanDomain
 from pyperplan.pddl.pddl import Type as PyperplanType
 
 from relational_structs.objects import Object, Type, TypedEntity, Variable
+from relational_structs.state import State
 
 _TypedEntityTypeVar = TypeVar("_TypedEntityTypeVar", bound=TypedEntity)
 
@@ -118,6 +120,10 @@ class GroundAtom(_Atom[Object]):
         assert set(self.objects).issubset(set(sub.keys()))
         return LiftedAtom(self.predicate, [sub[o] for o in self.objects])
 
+    def holds(self, state: State) -> bool:
+        """Check whether this ground atom holds in the given state."""
+        return self.predicate.holds(state, self.objects)
+
 
 @dataclass(frozen=True, order=True, repr=False)
 class Predicate:
@@ -125,6 +131,10 @@ class Predicate:
 
     name: str
     types: Sequence[Type]
+    # The classifier takes in a complete state and a sequence of objects
+    # representing the arguments. These objects should be the only ones
+    # treated "specially" by the classifier.
+    _classifier: Callable[[State, Sequence[Object]], bool] = field(compare=False)
 
     @multimethod
     def __call__(self, entities: Sequence[TypedEntity]) -> Any:
@@ -163,6 +173,17 @@ class Predicate:
 
     def __repr__(self) -> str:
         return str(self)
+
+    def holds(self, state: State, objects: Sequence[Object]) -> bool:
+        """Public method for calling the classifier.
+
+        Performs type checking first.
+        """
+        assert len(objects) == self.arity
+        for obj, pred_type in zip(objects, self.types):
+            assert isinstance(obj, Object)
+            assert obj.is_instance(pred_type)
+        return self._classifier(state, objects)
 
 
 _AtomTypeVar = TypeVar("_AtomTypeVar", bound=_Atom)
@@ -279,7 +300,11 @@ class PDDLDomain:
 
     @classmethod
     def parse(cls, pddl_str: str) -> PDDLDomain:
-        """Parse a domain from a string."""
+        """Parse a domain from a string.
+
+        NOTE: the domain will have dummy values for the type features and the
+        predicate classifiers (because these are not in a PDDL file).
+        """
         # Let pyperplan do most of the heavy lifting.
         pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_str)
         domain_name = pyperplan_domain.name
@@ -313,7 +338,8 @@ class PDDLDomain:
         for pyper_pred in pyperplan_predicates.values():
             name = pyper_pred.name
             pred_types = [pyperplan_type_to_type[t] for _, (t,) in pyper_pred.signature]
-            predicate_name_to_predicate[name] = Predicate(name, pred_types)
+            classifier = lambda s, o: False  # dummy
+            predicate_name_to_predicate[name] = Predicate(name, pred_types, classifier)
         # Convert the operators.
         operators = set()
         for pyper_op in pyperplan_operators.values():
@@ -420,7 +446,11 @@ class PDDLProblem:
 
     @classmethod
     def parse(cls, pddl_problem_str: str, pddl_domain: PDDLDomain) -> PDDLProblem:
-        """Parse a problem from a string."""
+        """Parse a problem from a string.
+
+        NOTE: the domain will have dummy values for the type features and the
+        predicate classifiers (because these are not in a PDDL file).
+        """
         # Let pyperplan do most of the heavy lifting.
         pddl_domain_str = str(pddl_domain)
         pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_domain_str)

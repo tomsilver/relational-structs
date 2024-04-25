@@ -14,8 +14,8 @@ def test_operators():
     """Tests for LiftedOperator() and GroundOperator()."""
     cup_type = Type("cup_type", ["feat1"])
     plate_type = Type("plate_type", ["feat1"])
-    on = Predicate("On", [cup_type, plate_type])
-    not_on = Predicate("NotOn", [cup_type, plate_type])
+    on = Predicate("On", [cup_type, plate_type], lambda s, o: True)
+    not_on = Predicate("NotOn", [cup_type, plate_type], lambda s, o: True)
     cup_var = cup_type("?cup")
     plate_var = plate_type("?plate")
     parameters = [cup_var, plate_var]
