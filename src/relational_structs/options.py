@@ -11,10 +11,9 @@ from typing import (
     TypeAlias,
 )
 
-import numpy as np
 from gym.spaces import Space
-from numpy.typing import NDArray
 
+from relational_structs.common import Action
 from relational_structs.state import State
 
 
@@ -97,8 +96,6 @@ class Option:
 
 
 # Type aliases.
-Array: TypeAlias = NDArray[np.float32]
-Action: TypeAlias = Any
 Parameters: TypeAlias = Any
 ParameterSpace: TypeAlias = Space
 OptionMemory: TypeAlias = Dict
