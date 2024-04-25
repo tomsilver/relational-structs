@@ -6,9 +6,12 @@ import pytest
 from relational_structs.spaces import ObjectSequenceBoxSpace
 from relational_structs.structs import (
     DefaultState,
+    GroundOperator,
+    LiftedOperator,
     Object,
     Option,
     ParameterizedOption,
+    Predicate,
     State,
     Type,
     Variable,
@@ -350,3 +353,65 @@ def test_option_memory_correct():
     # Make opt2 terminal.
     opt2.policy(state)
     assert opt2.terminal(state)
+
+
+def test_operators():
+    """Tests for LiftedOperator() and GroundOperator()."""
+    cup_type = Type("cup_type", ["feat1"])
+    plate_type = Type("plate_type", ["feat1"])
+    on = Predicate("On", [cup_type, plate_type], lambda s, o: True)
+    not_on = Predicate("NotOn", [cup_type, plate_type], lambda s, o: True)
+    cup_var = cup_type("?cup")
+    plate_var = plate_type("?plate")
+    parameters = [cup_var, plate_var]
+    preconditions = {not_on([cup_var, plate_var])}
+    add_effects = {on([cup_var, plate_var])}
+    delete_effects = {not_on([cup_var, plate_var])}
+
+    lifted_operator = LiftedOperator(
+        "Pick", parameters, preconditions, add_effects, delete_effects
+    )
+    assert (
+        str(lifted_operator)
+        == repr(lifted_operator)
+        == """(:action Pick
+    :parameters (?cup - cup_type ?plate - plate_type)
+    :precondition (and (NotOn ?cup ?plate))
+    :effect (and (On ?cup ?plate)
+        (not (NotOn ?cup ?plate)))
+)"""
+    )
+    assert lifted_operator.short_str == "Pick(?cup, ?plate)"
+
+    assert isinstance(hash(lifted_operator), int)
+    lifted_operator2 = LiftedOperator(
+        "Pick", parameters, preconditions, add_effects, delete_effects
+    )
+    assert lifted_operator == lifted_operator2
+    lifted_operator3 = LiftedOperator(
+        "Pick2", parameters, preconditions, add_effects, delete_effects
+    )
+    assert lifted_operator < lifted_operator3
+    assert lifted_operator3 > lifted_operator
+
+    cup = cup_type("cup")
+    plate = plate_type("plate")
+    ground_operator = lifted_operator.ground((cup, plate))
+    assert isinstance(ground_operator, GroundOperator)
+    assert ground_operator.parent is lifted_operator
+    assert (
+        str(ground_operator)
+        == repr(ground_operator)
+        == """(:action Pick
+    :parameters (cup - cup_type plate - plate_type)
+    :precondition (and (NotOn cup plate))
+    :effect (and (On cup plate)
+        (not (NotOn cup plate)))
+)"""
+    )
+    assert ground_operator.short_str == "Pick(cup, plate)"
+    ground_operator2 = lifted_operator2.ground((cup, plate))
+    ground_operator3 = lifted_operator3.ground((cup, plate))
+    assert ground_operator == ground_operator2
+    assert ground_operator < ground_operator3
+    assert ground_operator3 > ground_operator
