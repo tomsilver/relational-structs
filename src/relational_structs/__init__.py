@@ -5,6 +5,7 @@ from relational_structs.common import Action, Array
 from relational_structs.objects import Object, Type, Variable
 from relational_structs.options import (
     Option,
+    OptionMemory,
     ParameterizedInitiable,
     ParameterizedOption,
     ParameterizedPolicy,
