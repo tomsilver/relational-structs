@@ -1,5 +1,7 @@
 """Tests for pddl.py."""
 
+import pytest
+
 from relational_structs import (
     GroundOperator,
     LiftedOperator,
@@ -70,6 +72,11 @@ def test_operators():
     assert ground_operator == ground_operator2
     assert ground_operator < ground_operator3
     assert ground_operator3 > ground_operator
+
+    # Test missing parameters.
+    with pytest.raises(AssertionError) as e:
+        LiftedOperator("Pick", [], preconditions, add_effects, delete_effects)
+    assert "missing from operator parameters" in str(e)
 
 
 def test_parse_and_create_pddl():

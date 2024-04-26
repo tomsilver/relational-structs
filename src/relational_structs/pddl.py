@@ -199,6 +199,15 @@ class Operator(Generic[_TypedEntityTypeVar, _AtomTypeVar]):
     add_effects: Set[_AtomTypeVar]
     delete_effects: Set[_AtomTypeVar]
 
+    def __post_init__(self) -> None:
+        # Verify that all of the entities in the preconditions and effects are
+        # listed as parameters.
+        for atom in self.preconditions | self.add_effects | self.delete_effects:
+            for entity in atom.entities:
+                assert (
+                    entity in self.parameters
+                ), f"{entity} is missing from operator parameters"
+
     @cached_property
     def _hash(self) -> int:
         return hash(str(self))
