@@ -10,6 +10,7 @@ from relational_structs import (
     Predicate,
     Type,
 )
+from relational_structs.utils import parse_pddl_plan
 
 
 def test_operators():
@@ -175,3 +176,12 @@ def test_parse_and_create_pddl():
 
     pddl_problem = PDDLProblem.parse(problem_str, pddl_domain)
     assert str(pddl_problem) == problem_str
+
+    # Test parse_pddl_plan().
+    pddl_plan = ["(walk location1 location2 bob)", "(walk location2 location3 bob)"]
+    ground_op_plan = parse_pddl_plan(pddl_plan, pddl_domain, pddl_problem)
+    ground_op_plan_short = [o.short_str for o in ground_op_plan]
+    assert ground_op_plan_short == [
+        "walk(location1, location2, bob)",
+        "walk(location2, location3, bob)",
+    ]
