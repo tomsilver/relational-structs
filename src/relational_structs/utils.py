@@ -89,17 +89,19 @@ def parse_pddl_plan(
 ) -> List[GroundOperator]:
     """Parse a plan in string form into ground operator form."""
     ground_op_plan: List[GroundOperator] = []
-    op_name_to_op = {o.name: o for o in domain.operators}
-    obj_name_to_obj = {obj.name: obj for obj in problem.objects}
+    op_name_to_op = {o.name.lower(): o for o in domain.operators}
+    obj_name_to_obj = {obj.name.lower(): obj for obj in problem.objects}
     for s in ground_op_strs:
         assert s[0] == "("
         assert s[-1] == ")"
         s = s[1:-1]
         op_name, s = s.split(" ", maxsplit=1)
+        op_name = op_name.lower()
         assert op_name in op_name_to_op, f"Unknown operator name {op_name}"
         op = op_name_to_op[op_name]
         objs: List[Object] = []
         for obj_name in s.split(" "):
+            obj_name = obj_name.lower()
             assert obj_name in obj_name_to_obj, f"Unknown object name {obj_name}"
             objs.append(obj_name_to_obj[obj_name])
         ground_op = op.ground(tuple(objs))
