@@ -16,7 +16,13 @@ from typing import (
 import numpy as np
 
 from relational_structs.objects import Object, Type, TypedEntity
-from relational_structs.pddl import GroundAtom, Predicate
+from relational_structs.pddl import (
+    GroundAtom,
+    GroundOperator,
+    PDDLDomain,
+    PDDLProblem,
+    Predicate,
+)
 from relational_structs.state import State
 
 
@@ -76,3 +82,26 @@ def get_object_combinations(
 ) -> Iterator[List[Object]]:
     """Get all combinations of objects satisfying the given types sequence."""
     return _get_entity_combinations(objects, types)
+
+
+def parse_pddl_plan(
+    ground_op_strs: List[str], domain: PDDLDomain, problem: PDDLProblem
+) -> List[GroundOperator]:
+    """Parse a plan in string form into ground operator form."""
+    ground_op_plan: List[GroundOperator] = []
+    op_name_to_op = {o.name: o for o in domain.operators}
+    obj_name_to_obj = {obj.name: obj for obj in problem.objects}
+    for s in ground_op_strs:
+        assert s[0] == "("
+        assert s[-1] == ")"
+        s = s[1:-1]
+        op_name, s = s.split(" ", maxsplit=1)
+        assert op_name in op_name_to_op, f"Unknown operator name {op_name}"
+        op = op_name_to_op[op_name]
+        objs: List[Object] = []
+        for obj_name in s.split(" "):
+            assert obj_name in obj_name_to_obj, f"Unknown object name {obj_name}"
+            objs.append(obj_name_to_obj[obj_name])
+        ground_op = op.ground(tuple(objs))
+        ground_op_plan.append(ground_op)
+    return ground_op_plan
