@@ -5,8 +5,8 @@ from typing import Any, Collection, List, Sequence, Set, cast
 import numpy as np
 from gym.spaces import Box, Space
 
+from relational_structs.object_centric_state import ObjectCentricState
 from relational_structs.objects import Object, Type
-from relational_structs.state import State
 
 
 class ObjectCentricStateSpace(Space):
@@ -26,7 +26,7 @@ class ObjectCentricStateSpace(Space):
         return set(self._types)
 
     def contains(self, x: Any) -> bool:
-        assert isinstance(x, State)
+        assert isinstance(x, ObjectCentricState)
         return all(o.type in self._types for o in x)
 
     @property
@@ -34,7 +34,7 @@ class ObjectCentricStateSpace(Space):
         # Not flattenable because number of objects can change.
         return False
 
-    def sample(self, mask: Any | None = None) -> State:
+    def sample(self, mask: Any | None = None) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
 
 
@@ -66,7 +66,7 @@ class ObjectSequenceSpace(Space):
         # Is flattenable because the length of members is fixed.
         return True
 
-    def sample(self, mask: Any | None = None) -> State:
+    def sample(self, mask: Any | None = None) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
 
 
@@ -105,5 +105,5 @@ class ObjectSequenceBoxSpace(Space):
             and self._box_space.is_np_flattenable
         )
 
-    def sample(self, mask: Any | None = None) -> State:
+    def sample(self, mask: Any | None = None) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")

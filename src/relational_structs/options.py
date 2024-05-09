@@ -14,7 +14,7 @@ from typing import (
 from gym.spaces import Space
 
 from relational_structs.common import Action
-from relational_structs.state import State
+from relational_structs.object_centric_state import ObjectCentricState
 
 
 @dataclass(frozen=True, eq=False)
@@ -80,13 +80,13 @@ class Option:
 
     name: str
     # A policy maps a state to an action.
-    policy: Callable[[State], Action] = field(repr=False)
+    policy: Callable[[ObjectCentricState], Action] = field(repr=False)
     # An initiation classifier maps a state to a bool, which is True
     # iff the option can start now.
-    initiable: Callable[[State], bool] = field(repr=False)
+    initiable: Callable[[ObjectCentricState], bool] = field(repr=False)
     # A termination condition maps a state to a bool, which is True
     # iff the option should terminate now.
-    terminal: Callable[[State], bool] = field(repr=False)
+    terminal: Callable[[ObjectCentricState], bool] = field(repr=False)
     # The parameterized option that generated this option.
     parent: ParameterizedOption = field(repr=False)
     # The parameters that were used to ground this option.
@@ -99,6 +99,12 @@ class Option:
 Parameters: TypeAlias = Any
 ParameterSpace: TypeAlias = Space
 OptionMemory: TypeAlias = Dict
-ParameterizedPolicy: TypeAlias = Callable[[State, Parameters, OptionMemory], Action]
-ParameterizedInitiable: TypeAlias = Callable[[State, Parameters, OptionMemory], bool]
-ParameterizedTerminal: TypeAlias = Callable[[State, Parameters, OptionMemory], bool]
+ParameterizedPolicy: TypeAlias = Callable[
+    [ObjectCentricState, Parameters, OptionMemory], Action
+]
+ParameterizedInitiable: TypeAlias = Callable[
+    [ObjectCentricState, Parameters, OptionMemory], bool
+]
+ParameterizedTerminal: TypeAlias = Callable[
+    [ObjectCentricState, Parameters, OptionMemory], bool
+]

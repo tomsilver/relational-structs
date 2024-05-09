@@ -8,23 +8,16 @@ from relational_structs import Object, Type, Variable
 def test_object_type():
     """Tests for Type class."""
     name = "test"
-    feats = ["feat1", "feat2"]
-    my_type = Type(name, feats)
+    my_type = Type(name)
     assert my_type.name == name
-    assert my_type.dim == len(my_type.feature_names) == len(feats)
-    assert my_type.feature_names == feats
     assert isinstance(hash(my_type), int)
     name = "test2"
-    feats = ["feat3"]
-    my_type2 = Type(name, feats, parent=my_type)
+    my_type2 = Type(name, parent=my_type)
     assert my_type2.name == name
-    assert my_type2.dim == len(my_type2.feature_names) == len(feats)
-    assert my_type2.feature_names == feats
     assert isinstance(hash(my_type2), int)
     assert my_type2.parent == my_type
     name = "test2"
-    feats = ["feat3"]
-    my_type3 = Type(name, feats, parent=my_type)  # same as my_type2
+    my_type3 = Type(name, parent=my_type)  # same as my_type2
     obj = my_type("obj1")
     assert obj.is_instance(my_type)
     assert not obj.is_instance(my_type2)
@@ -38,7 +31,7 @@ def test_object_type():
 def test_object():
     """Tests for Object class."""
     my_name = "obj"
-    my_type = Type("type", ["feat1", "feat2"])
+    my_type = Type("type")
     obj = my_type(my_name)
     assert isinstance(obj, Object)
     assert obj.name == my_name

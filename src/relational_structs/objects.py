@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import (
     Optional,
-    Sequence,
 )
 
 
@@ -15,13 +14,7 @@ class Type:
     """Struct defining a type."""
 
     name: str
-    feature_names: Sequence[str] = field(repr=False)
     parent: Optional[Type] = field(default=None, repr=False)
-
-    @property
-    def dim(self) -> int:
-        """Dimensionality of the feature vector of this object type."""
-        return len(self.feature_names)
 
     def __call__(self, name: str) -> TypedEntity:
         """Convenience method for generating _TypedEntities."""
@@ -30,7 +23,7 @@ class Type:
         return Object(name, self)
 
     def __hash__(self) -> int:
-        return hash((self.name, tuple(self.feature_names)))
+        return hash(self.name)
 
 
 @dataclass(frozen=True, order=True, repr=False)
