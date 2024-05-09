@@ -8,7 +8,6 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Optional,
     Sequence,
 )
 
@@ -20,18 +19,16 @@ from relational_structs.objects import Object, Type
 
 
 @dataclass
-class State:
-    """Struct defining the low-level state of the world."""
+class ObjectCentricState:
+    """Storage for object features."""
 
     data: Dict[Object, Array]
-    # Some environments will need to store additional simulator state, so
-    # this field is provided.
-    simulator_state: Optional[Any] = None
+    type_features: Dict[Type, List[str]]
 
     def __post_init__(self) -> None:
         # Check feature vector dimensions.
         for obj in self:
-            assert len(self[obj]) == obj.type.dim
+            assert len(self[obj]) == len(self.type_features[obj.type])
 
     def __iter__(self) -> Iterator[Object]:
         """An iterator over the state's objects, in sorted order."""
@@ -42,12 +39,12 @@ class State:
 
     def get(self, obj: Object, feature_name: str) -> Any:
         """Look up an object feature by name."""
-        idx = obj.type.feature_names.index(feature_name)
+        idx = self.type_features[obj.type].index(feature_name)
         return self.data[obj][idx]
 
     def set(self, obj: Object, feature_name: str, feature_val: Any) -> None:
         """Set the value of an object feature by name."""
-        idx = obj.type.feature_names.index(feature_name)
+        idx = self.type_features[obj.type].index(feature_name)
         self.data[obj][idx] = feature_val
 
     def get_objects(self, object_type: Type) -> List[Object]:
@@ -64,7 +61,7 @@ class State:
             feats.append(self[obj])
         return np.hstack(feats)
 
-    def copy(self) -> State:
+    def copy(self) -> ObjectCentricState:
         """Return a copy of this state.
 
         The simulator state is assumed to be immutable.
@@ -72,7 +69,7 @@ class State:
         new_data = {}
         for obj in self:
             new_data[obj] = self._copy_state_value(self.data[obj])
-        return State(new_data, simulator_state=self.simulator_state)
+        return ObjectCentricState(new_data, self.type_features)
 
     def _copy_state_value(self, val: Any) -> Any:
         if val is None or isinstance(val, (float, bool, int, str)):
@@ -82,17 +79,13 @@ class State:
         assert hasattr(val, "copy")
         return val.copy()
 
-    def allclose(self, other: State) -> bool:
+    def allclose(self, other: ObjectCentricState, atol: float = 1e-3) -> bool:
         """Return whether this state is close enough to another one, i.e., its
         objects are the same, and the features are close."""
-        if self.simulator_state is not None or other.simulator_state is not None:
-            raise NotImplementedError(
-                "Cannot use allclose when simulator_state is not None."
-            )
         if not sorted(self.data) == sorted(other.data):
             return False
         for obj in self.data:
-            if not np.allclose(self.data[obj], other.data[obj], atol=1e-3):
+            if not np.allclose(self.data[obj], other.data[obj], atol=atol):
                 return False
         return True
 
@@ -105,7 +98,7 @@ class State:
             type_to_table[obj.type].append([obj.name] + list(map(str, self[obj])))
         table_strs = []
         for t in sorted(type_to_table):
-            headers = ["type: " + t.name] + list(t.feature_names)
+            headers = ["type: " + t.name] + list(self.type_features[t])
             table_strs.append(tabulate(type_to_table[t], headers=headers))
         ll = max(len(line) for table in table_strs for line in table.split("\n"))
         prefix = "#" * (ll // 2 - 3) + " STATE " + "#" * (ll - ll // 2 - 4) + "\n"
@@ -114,4 +107,4 @@ class State:
 
 
 # Constants.
-DefaultState = State({})
+DefaultObjectCentricState = ObjectCentricState({}, {})

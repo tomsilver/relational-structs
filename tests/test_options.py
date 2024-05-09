@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 
 from relational_structs import (
-    DefaultState,
+    DefaultObjectCentricState,
+    ObjectCentricState,
     ObjectSequenceBoxSpace,
     Option,
     ParameterizedOption,
-    State,
     Type,
 )
 
@@ -16,34 +16,9 @@ from relational_structs import (
 def test_option():
     """Tests for ParameterizedOption, Option classes."""
 
-    type1 = Type("type1", ["feat1", "feat2"])
-    type2 = Type("type2", ["feat3", "feat4", "feat5"])
-    obj3 = type1("obj3")
-    obj7 = type1("obj7")
-    obj1 = type2("obj1")
-    obj2 = type2("obj2")
-    obj1_dup = type2("obj1")
-    obj4 = type2("obj4")
-    obj9 = type2("obj9")
-    assert obj7 > obj1
-    assert obj1 < obj4
-    assert obj1 < obj3
-    assert obj1 != obj9
-    assert obj1 == obj1_dup
-    with pytest.raises(AssertionError):
-        State({obj3: [1, 2, 3]})  # bad feature vector dimension
-    state = State(
-        {
-            obj3: [1, 2],
-            obj7: [3, 4],
-            obj1: [5, 6, 7],
-            obj4: [8, 9, 10],
-            obj9: [11, 12, 13],
-        }
-    )
-
-    type1 = Type("type1", ["feat1", "feat2"])
-    type2 = Type("type2", ["feat3", "feat4", "feat5"])
+    type1 = Type("type1")
+    type2 = Type("type2")
+    type_to_feats = {type1: ["feat1", "feat2"], type2: ["feat3", "feat4", "feat5"]}
 
     params_space = ObjectSequenceBoxSpace([type1, type2], low=[-10, -10], high=[10, 10])
 
@@ -91,6 +66,24 @@ def test_option():
     assert option.memory == {}
     assert option.parent.name == "Pick"
     assert option.parent is parameterized_option
+
+    obj3 = type1("obj3")
+    obj7 = type1("obj7")
+    obj1 = type2("obj1")
+    obj2 = type2("obj2")
+    obj4 = type2("obj4")
+    obj9 = type2("obj9")
+    state = ObjectCentricState(
+        {
+            obj3: [1, 2],
+            obj7: [3, 4],
+            obj1: [5, 6, 7],
+            obj4: [8, 9, 10],
+            obj9: [11, 12, 13],
+        },
+        type_to_feats,
+    )
+
     assert np.all(option.policy(state) == np.array(box_params) * 2)
     assert option.initiable(state)
     assert option.memory == {"test_key": "test_string"}  # set by initiable()
@@ -136,7 +129,7 @@ def test_option_memory_incorrect():
     param_opt = _make_option()
     opt1 = param_opt.ground(([], [0.7]))
     opt2 = param_opt.ground(([], [0.4]))
-    state = DefaultState
+    state = DefaultObjectCentricState
     assert abs(opt1.policy(state)[0] - 0.7) < 1e-6
     assert abs(opt2.policy(state)[0] - 0.4) < 1e-6
     # Since memory is shared between the two ground options, both will be
@@ -176,7 +169,7 @@ def test_option_memory_correct():
     param_opt = _make_option()
     opt1 = param_opt.ground(([], [0.7]))
     opt2 = param_opt.ground(([], [0.4]))
-    state = DefaultState
+    state = DefaultObjectCentricState
     assert opt1.initiable(state)
     assert opt2.initiable(state)
     assert abs(opt1.policy(state)[0] - 0.7) < 1e-6

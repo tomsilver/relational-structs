@@ -4,15 +4,16 @@ import numpy as np
 import pytest
 
 from relational_structs import (
-    State,
+    ObjectCentricState,
     Type,
 )
 
 
 def test_state():
     """Tests for State class."""
-    type1 = Type("type1", ["feat1", "feat2"])
-    type2 = Type("type2", ["feat3", "feat4", "feat5"])
+    type1 = Type("type1")
+    type2 = Type("type2")
+    type_to_features = {type1: ["feat1", "feat2"], type2: ["feat3", "feat4", "feat5"]}
     obj3 = type1("obj3")
     obj7 = type1("obj7")
     obj1 = type2("obj1")
@@ -26,15 +27,18 @@ def test_state():
     assert obj1 != obj9
     assert obj1 == obj1_dup
     with pytest.raises(AssertionError):
-        State({obj3: [1, 2, 3]})  # bad feature vector dimension
-    state = State(
+        ObjectCentricState(
+            {obj3: [1, 2, 3]}, type_to_features
+        )  # bad feature vector dimension
+    state = ObjectCentricState(
         {
             obj3: [1, 2],
             obj7: [3, 4],
             obj1: [5, 6, 7],
             obj4: [8, 9, 10],
             obj9: [11, 12, 13],
-        }
+        },
+        type_to_features,
     )
     sorted_objs = list(state)
     assert sorted_objs == [obj1, obj3, obj4, obj7, obj9]
@@ -57,44 +61,40 @@ def test_state():
     assert state != state2  # changing copy doesn't change original
     assert state2.get(obj1, "feat3") == 999
     assert state2[obj1][2] == 991
-    state3 = State({obj3: np.array([1, 2])})
+    state3 = ObjectCentricState({obj3: np.array([1, 2])}, type_to_features)
     state3.copy()  # try copying with numpy array
-    # Test state copy with a simulator state.
-    state4 = State({obj3: np.array([1, 2])}, simulator_state="dummy")
-    assert state4.simulator_state == "dummy"
-    assert state4.copy().simulator_state == "dummy"
-    # Cannot use allclose with non-None simulator states.
-    with pytest.raises(NotImplementedError):
-        state4.allclose(state3)
-    with pytest.raises(NotImplementedError):
-        state3.allclose(state4)
     # Test state vec with no objects
     vec = state.vec([])
     assert vec.shape == (0,)
     # Test allclose
-    state2 = State(
+    state2 = ObjectCentricState(
         {
             obj3: [1, 122],
             obj7: [3, 4],
             obj1: [5, 6, 7],
             obj4: [8, 9, 10],
             obj9: [11, 12, 13],
-        }
+        },
+        type_to_features,
     )
     assert state.allclose(state2)
-    state2 = State(
+    state2 = ObjectCentricState(
         {
             obj3: [1, 122],
             obj7: [3, 4],
             obj1: [5, 6, 7],
             obj4: [8.3, 9, 10],
             obj9: [11, 12, 13],
-        }
+        },
+        type_to_features,
     )
     assert not state.allclose(state2)  # obj4 state is different
-    state2 = State({obj3: [1, 122], obj7: [3, 4], obj4: [8, 9, 10], obj9: [11, 12, 13]})
+    state2 = ObjectCentricState(
+        {obj3: [1, 122], obj7: [3, 4], obj4: [8, 9, 10], obj9: [11, 12, 13]},
+        type_to_features,
+    )
     assert not state.allclose(state2)  # obj1 is missing
-    state2 = State(
+    state2 = ObjectCentricState(
         {
             obj3: [1, 122],
             obj7: [3, 4],
@@ -102,7 +102,8 @@ def test_state():
             obj2: [5, 6, 7],
             obj4: [8, 9, 10],
             obj9: [11, 12, 13],
-        }
+        },
+        type_to_features,
     )
     assert not state.allclose(state2)  # obj2 is extra
     # Test pretty_str
@@ -123,8 +124,3 @@ obj9                11       12       13
 ########################################
 """
     )
-    # Test including simulator_state
-    state_with_sim = State({}, "simulator_state")
-    assert state_with_sim.simulator_state == "simulator_state"
-    assert state.simulator_state is None
-    return state

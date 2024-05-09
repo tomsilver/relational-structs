@@ -2,6 +2,10 @@
 
 # pylint: disable=unused-import
 from relational_structs.common import Action, Array
+from relational_structs.object_centric_state import (
+    DefaultObjectCentricState,
+    ObjectCentricState,
+)
 from relational_structs.objects import Object, Type, Variable
 from relational_structs.options import (
     Option,
@@ -27,4 +31,3 @@ from relational_structs.spaces import (
     ObjectSequenceBoxSpace,
     ObjectSequenceSpace,
 )
-from relational_structs.state import DefaultState, State
