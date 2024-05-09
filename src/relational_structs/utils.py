@@ -26,11 +26,7 @@ def create_state_from_dict(
     type_features: Dict[Type, List[str]],
 ) -> ObjectCentricState:
     """Small utility to generate a state from a dictionary `data` of individual
-    feature values for each object.
-
-    A simulator_state for the outputted State may optionally be
-    provided.
-    """
+    feature values for each object."""
     state_dict = {}
     for obj, obj_data in data.items():
         obj_vec = []

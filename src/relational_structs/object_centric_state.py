@@ -62,10 +62,7 @@ class ObjectCentricState:
         return np.hstack(feats)
 
     def copy(self) -> ObjectCentricState:
-        """Return a copy of this state.
-
-        The simulator state is assumed to be immutable.
-        """
+        """Return a copy of this state."""
         new_data = {}
         for obj in self:
             new_data[obj] = self._copy_state_value(self.data[obj])
