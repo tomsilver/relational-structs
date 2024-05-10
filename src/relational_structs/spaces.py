@@ -3,7 +3,7 @@
 from typing import Any, Collection, List, Sequence, Set, cast
 
 import numpy as np
-from gym.spaces import Box, Space
+from gymnasium.spaces import Box, Space
 
 from relational_structs.object_centric_state import ObjectCentricState
 from relational_structs.objects import Object, Type

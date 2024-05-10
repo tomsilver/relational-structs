@@ -11,7 +11,7 @@ from typing import (
     TypeAlias,
 )
 
-from gym.spaces import Space
+from gymnasium.spaces import Space
 
 from relational_structs.common import Action
 from relational_structs.object_centric_state import ObjectCentricState
