@@ -7,6 +7,7 @@ from typing import (
     Iterator,
     List,
     Sequence,
+    Set,
     TypeVar,
 )
 
@@ -16,6 +17,7 @@ from relational_structs.object_centric_state import ObjectCentricState
 from relational_structs.objects import Object, Type, TypedEntity
 from relational_structs.pddl import (
     GroundOperator,
+    LiftedOperator,
     PDDLDomain,
     PDDLProblem,
 )
@@ -85,3 +87,16 @@ def parse_pddl_plan(
         ground_op = op.ground(tuple(objs))
         ground_op_plan.append(ground_op)
     return ground_op_plan
+
+
+def all_ground_operators(
+    operators: Collection[LiftedOperator], objects: Collection[Object]
+) -> Set[GroundOperator]:
+    """Get all ground operators given objects."""
+    ground_operators: Set[GroundOperator] = set()
+    for operator in operators:
+        types = [p.type for p in operator.parameters]
+        for choice in get_object_combinations(objects, types):
+            ground_operator = operator.ground(tuple(choice))
+            ground_operators.add(ground_operator)
+    return ground_operators

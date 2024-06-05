@@ -288,11 +288,7 @@ class PDDLDomain:
 
     @classmethod
     def parse(cls, pddl_str: str) -> PDDLDomain:
-        """Parse a domain from a string.
-
-        NOTE: the domain will have dummy values for the type features and the
-        predicate classifiers (because these are not in a PDDL file).
-        """
+        """Parse a domain from a string."""
         # Let pyperplan do most of the heavy lifting.
         pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_str)
         domain_name = pyperplan_domain.name
