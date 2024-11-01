@@ -8,6 +8,8 @@ from typing import (
     Optional,
 )
 
+from tomsutils.utils import consistent_hash
+
 
 @dataclass(frozen=True, order=True)
 class Type:
@@ -23,7 +25,7 @@ class Type:
         return Object(name, self)
 
     def __hash__(self) -> int:
-        return hash(self.name)
+        return consistent_hash(self.name)
 
 
 @dataclass(frozen=True, order=True, repr=False)
@@ -43,7 +45,7 @@ class TypedEntity:
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     def __str__(self) -> str:
         return self._str
