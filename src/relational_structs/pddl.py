@@ -27,6 +27,7 @@ from pyperplan.pddl.parser import (
 )
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
 from pyperplan.pddl.pddl import Type as PyperplanType
+from tomsutils.utils import consistent_hash
 
 from relational_structs.objects import Object, Type, TypedEntity, Variable
 
@@ -55,7 +56,7 @@ class _Atom(Generic[_TypedEntityTypeVar]):
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     @cached_property
     def pddl_str(self) -> str:
@@ -140,7 +141,7 @@ class Predicate:
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     @cached_property
     def pddl_str(self) -> str:
@@ -189,7 +190,7 @@ class Operator(Generic[_TypedEntityTypeVar, _AtomTypeVar]):
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     @cached_property
     def pddl_str(self) -> str:
@@ -363,7 +364,7 @@ class PDDLDomain:
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     @cached_property
     def _str(self) -> str:
@@ -468,7 +469,7 @@ class PDDLProblem:
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     @cached_property
     def _str(self) -> str:

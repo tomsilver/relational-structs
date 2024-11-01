@@ -12,6 +12,7 @@ from typing import (
 )
 
 from gymnasium.spaces import Space
+from tomsutils.utils import consistent_hash
 
 from relational_structs.common import Action
 from relational_structs.object_centric_state import ObjectCentricState
@@ -41,7 +42,7 @@ class ParameterizedOption:
 
     @cached_property
     def _hash(self) -> int:
-        return hash(str(self))
+        return consistent_hash(str(self))
 
     def __eq__(self, other: Any) -> bool:
         assert isinstance(other, ParameterizedOption)
