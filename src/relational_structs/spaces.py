@@ -59,7 +59,7 @@ class ObjectSequenceSpace(Space):
         x = cast(Sequence[Object], x)
         if len(x) != len(self._types):
             return False
-        return all(o.type == t for o, t in zip(x, self._types))
+        return all(o.is_instance(t) for o, t in zip(x, self._types))
 
     @property
     def is_np_flattenable(self) -> bool:
