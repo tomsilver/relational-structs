@@ -34,7 +34,9 @@ class ObjectCentricStateSpace(Space):
         # Not flattenable because number of objects can change.
         return False
 
-    def sample(self, mask: Any | None = None) -> ObjectCentricState:
+    def sample(
+        self, mask: Any | None = None, probability: Any | None = None
+    ) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
 
 
@@ -59,14 +61,16 @@ class ObjectSequenceSpace(Space):
         x = cast(Sequence[Object], x)
         if len(x) != len(self._types):
             return False
-        return all(o.type == t for o, t in zip(x, self._types))
+        return all(o.is_instance(t) for o, t in zip(x, self._types))
 
     @property
     def is_np_flattenable(self) -> bool:
         # Is flattenable because the length of members is fixed.
         return True
 
-    def sample(self, mask: Any | None = None) -> ObjectCentricState:
+    def sample(
+        self, mask: Any | None = None, probability: Any | None = None
+    ) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
 
 
@@ -105,5 +109,7 @@ class ObjectSequenceBoxSpace(Space):
             and self._box_space.is_np_flattenable
         )
 
-    def sample(self, mask: Any | None = None) -> ObjectCentricState:
+    def sample(
+        self, mask: Any | None = None, probability: Any | None = None
+    ) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
