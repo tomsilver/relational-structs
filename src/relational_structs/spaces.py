@@ -80,6 +80,17 @@ class ObjectCentricBoxSpace(Box):
             vec, self.constant_objects, self.type_features
         )
 
+    def create_markdown_description(self) -> str:
+        """Create a markdown-format description of this space."""
+        md_table_str = "| **Index** | **Object** | **Feature** |"
+        md_table_str += "\n| --- | --- | --- |"
+        idx = 0
+        for obj in self.constant_objects:
+            for feat in self.type_features[obj.type]:
+                md_table_str += f"\n| {idx} | {obj.name} | {feat} |"
+                idx += 1
+        return f"The entries of an array in this Box space correspond to the following object features:\n{md_table_str}\n"  # pylint: disable=line-too-long
+
 
 class ObjectSequenceSpace(Space):
     """A space for where members are sequences of objects corresponding to a
