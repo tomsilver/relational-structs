@@ -1,10 +1,13 @@
 """Gym spaces that use relational data structures."""
 
+from __future__ import annotations
+
 from typing import Any, Collection, List, Sequence, Set, cast
 
 import numpy as np
 from gymnasium.spaces import Box, Space
 
+from relational_structs.common import Array
 from relational_structs.object_centric_state import ObjectCentricState
 from relational_structs.objects import Object, Type
 
@@ -38,6 +41,44 @@ class ObjectCentricStateSpace(Space):
         self, mask: Any | None = None, probability: Any | None = None
     ) -> ObjectCentricState:
         raise NotImplementedError("Sampling is not well-defined.")
+
+    def to_box(
+        self,
+        constant_objects: list[Object],
+        type_features: dict[Type, list[str]],
+    ) -> ObjectCentricBoxSpace:
+        """Create an ObjectCentricState given a fixed object list."""
+        return ObjectCentricBoxSpace(constant_objects, type_features)
+
+
+class ObjectCentricBoxSpace(Box):
+    """A box space where elements are vectors, but the entries represent
+    flattened features for a constant number of objects."""
+
+    def __init__(
+        self,
+        constant_objects: list[Object],
+        type_features: dict[Type, list[str]],
+    ) -> None:
+        self.constant_objects = constant_objects
+        self.type_features = type_features
+        num_dims = sum(len(type_features[o.type]) for o in constant_objects)
+        shape = (num_dims,)
+        low = np.full(shape, -np.inf, dtype=np.float32)
+        high = np.full(shape, np.inf, dtype=np.float32)
+        super().__init__(low, high, shape, dtype=np.float32)
+
+    def vectorize(self, object_centric_state: ObjectCentricState) -> Array:
+        """Create a vector in this space for the given object-centric state."""
+        return object_centric_state.vec(self.constant_objects)
+
+    def devectorize(self, vec: Array) -> ObjectCentricState:
+        """Create an object-centric state from a vector that is in this
+        space."""
+        assert self.contains(vec)
+        return ObjectCentricState.from_vec(
+            vec, self.constant_objects, self.type_features
+        )
 
 
 class ObjectSequenceSpace(Space):
