@@ -37,6 +37,12 @@ class ObjectCentricState:
     def __getitem__(self, key: Object) -> Array:
         return self.data[key]
 
+    def __eq__(self, other: Any) -> bool:
+        """NOTE: it is better to call allclose() to control precision."""
+        if not isinstance(other, ObjectCentricState):
+            return False
+        return self.allclose(other)
+
     def get(self, obj: Object, feature_name: str) -> Any:
         """Look up an object feature by name."""
         idx = self.type_features[obj.type].index(feature_name)
