@@ -27,7 +27,7 @@ class ObjectCentricStateSpace(Space):
 
     def contains(self, x: Any) -> bool:
         assert isinstance(x, ObjectCentricState)
-        return all(o.type in self._types for o in x)
+        return all(any(o.is_instance(t) for t in self._types) for o in x)
 
     @property
     def is_np_flattenable(self) -> bool:
