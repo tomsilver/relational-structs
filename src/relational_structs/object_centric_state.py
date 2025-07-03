@@ -65,7 +65,20 @@ class ObjectCentricState:
             return np.zeros(0, dtype=np.float32)
         for obj in objects:
             feats.append(self[obj])
-        return np.hstack(feats)
+        return np.hstack(feats).astype(np.float32)
+
+    @classmethod
+    def from_vec(
+        cls,
+        vec: Array,
+        constant_objects: list[Object],
+        type_features: Dict[Type, List[str]],
+    ):
+        """Create from a vector."""
+        feat_counts = [len(type_features[o.type]) for o in constant_objects][:-1]
+        splits = np.cumsum(feat_counts)
+        data = dict(zip(constant_objects, np.split(vec, splits)))
+        return ObjectCentricState(data, type_features)
 
     def copy(self) -> ObjectCentricState:
         """Return a copy of this state."""

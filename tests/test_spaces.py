@@ -55,3 +55,12 @@ def test_object_centric_state_space():
     assert not space.contains(state2)
     with pytest.raises(NotImplementedError):
         space.sample()
+
+    # Test conversion to ObjectCentricBoxSpace().
+    box = space.to_box([obj1, obj2, obj3], type_to_feats)
+    assert box.shape == (5,)
+    vec = box.vectorize(state)
+    assert vec.shape == (5,)
+    assert box.contains(vec)
+    recovered_state = box.devectorize(vec)
+    assert recovered_state.allclose(state)
