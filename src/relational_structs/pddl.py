@@ -18,6 +18,7 @@ from typing import (
 )
 
 from multimethod import multimethod
+from prpl_utils.utils import consistent_hash
 from pyperplan.pddl.parser import (
     TraversePDDLDomain,
     TraversePDDLProblem,
@@ -27,7 +28,6 @@ from pyperplan.pddl.parser import (
 )
 from pyperplan.pddl.pddl import Domain as PyperplanDomain
 from pyperplan.pddl.pddl import Type as PyperplanType
-from tomsutils.utils import consistent_hash
 
 from relational_structs.objects import Object, Type, TypedEntity, Variable
 
