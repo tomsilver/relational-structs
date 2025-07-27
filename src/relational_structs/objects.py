@@ -8,7 +8,7 @@ from typing import (
     Optional,
 )
 
-from tomsutils.utils import consistent_hash
+from prpl_utils.utils import consistent_hash
 
 
 @dataclass(frozen=True, order=True)

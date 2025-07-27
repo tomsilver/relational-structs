@@ -15,7 +15,7 @@ dependencies = [
    "tabulate",
    "multimethod",
    "pyperplan",
-   "tomsutils@git+https://github.com/tomsilver/toms-utils.git",
+   "prpl_utils@git+https://github.com/Princeton-Robot-Planning-and-Learning/prpl-utils.git",
 ]
 
 [project.optional-dependencies]
