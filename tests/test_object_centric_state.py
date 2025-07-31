@@ -124,3 +124,6 @@ obj9                11       12       13
 ########################################
 """
     )
+    # Test hashing.
+    assert isinstance(hash(state), int)
+    assert hash(state) != hash(state2)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import (
     Any,
     Dict,
@@ -12,6 +13,7 @@ from typing import (
 )
 
 import numpy as np
+from prpl_utils.utils import consistent_hash
 from tabulate import tabulate
 
 from relational_structs.common import Array
@@ -29,6 +31,18 @@ class ObjectCentricState:
         # Check feature vector dimensions.
         for obj in self:
             assert len(self[obj]) == len(self.type_features[obj.type])
+
+    @cached_property
+    def _hash(self) -> int:
+        items = []
+        for obj in sorted(self.data):
+            obj_repr = (obj.name, obj.type.name)
+            features = tuple(self.data[obj])
+            items.append((obj_repr, features))
+        return consistent_hash(tuple(items))
+
+    def __hash__(self) -> int:
+        return self._hash
 
     def __iter__(self) -> Iterator[Object]:
         """An iterator over the state's objects, in sorted order."""
