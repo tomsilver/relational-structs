@@ -1,14 +1,19 @@
 """Tests for pddl.py."""
 
 import pytest
+from prpl_utils.pddl_planning import run_pyperplan_planning
 
 from relational_structs import (
+    GroundAtom,
     GroundOperator,
+    LiftedAtom,
     LiftedOperator,
+    Object,
     PDDLDomain,
     PDDLProblem,
     Predicate,
     Type,
+    Variable,
 )
 from relational_structs.utils import parse_pddl_plan
 
@@ -185,3 +190,82 @@ def test_parse_and_create_pddl():
         "walk(location1, location2, bob)",
         "walk(location2, location3, bob)",
     ]
+
+
+def test_run_pyperplan_planning():
+    """Test the run_pyperplan_planning function with a simple PDDL domain and
+    problem."""
+    # Define types
+    block_type = Type(name="block")
+    level1_block_type = Type(name="a_block", parent=block_type)
+    level2_block_type = Type(name="b_block", parent=level1_block_type)
+
+    # Define predicates
+    On = Predicate(name="On", types=[level1_block_type, level2_block_type])
+
+    # Define objects
+    a = Variable(name="?b1", type=level1_block_type)
+    b = Variable(name="?b2", type=level2_block_type)
+
+    # Define operators
+    pick_place_op = LiftedOperator(
+        name="PickPlace",
+        parameters=[a, b],
+        preconditions=set(),
+        add_effects={LiftedAtom(On, [a, b])},
+        delete_effects=set(),
+    )
+
+    # Define domain
+    domain = PDDLDomain(
+        name="blocks_world",
+        types={block_type, level1_block_type, level2_block_type},
+        predicates={On},
+        operators={pick_place_op},
+    )
+
+    # NOTE: pyperplan requires all types to be listed on the left hand side. Earlier
+    # we had a bug where "block" was missing from the left hand side, because it has
+    # no parent, leading to a parsing error in pyperplan.
+
+    assert (
+        str(domain)
+        == """(define (domain blocks_world)
+    (:requirements :typing)
+    (:types 
+    b_block - a_block
+    a_block - block
+    block)
+
+    (:predicates
+    (On ?x0 - a_block ?x1 - b_block)
+    )
+
+    (:action PickPlace
+    :parameters (?b1 - a_block ?b2 - b_block)
+    :precondition (and )
+    :effect (and (On ?b1 ?b2))
+)
+)
+"""
+    )
+
+    # Define initial state and goal
+    block0 = Object(name="block0", type=level1_block_type)
+    block1 = Object(name="block1", type=level2_block_type)
+
+    init_atoms = {}
+    goal = {GroundAtom(On, [block0, block1])}
+
+    # Define problem
+    problem = PDDLProblem(
+        domain_name="blocks_world",
+        problem_name="simple_problem",
+        objects={block0, block1},
+        init_atoms=init_atoms,
+        goal=goal,
+    )
+
+    # Run planning
+    plan = run_pyperplan_planning(str(domain), str(problem))
+    assert plan == ["(pickplace block0 block1)"]

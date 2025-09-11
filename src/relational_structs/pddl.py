@@ -397,6 +397,17 @@ class PDDLDomain:
                 else:
                     child_type_str = " ".join(t.name for t in child_types)
                     types_str += f"\n    {child_type_str} - {parent_type.name}"
+            # NOTE: for children with no parents, we need to explicitly add them to the
+            # type list as lone types. Otherwise, pyperplan parsing fails.
+            parentless_children = set(parent_to_children_types)
+            for children in parent_to_children_types.values():
+                parentless_children -= set(children)
+            for parent_type in sorted(parentless_children):
+                # NOTE: the "object" type is special in pyperplan. It's always included
+                # implicitly in the domain. Adding it in the PDDL leads to headaches.
+                if parent_type.name == "object":
+                    continue
+                types_str += f"\n    {parent_type.name}"
         ops_lst = sorted(self.operators)
         preds_str = "\n    ".join(pred.pddl_str for pred in preds_lst)
         ops_strs = "\n\n  ".join(op.pddl_str for op in ops_lst)
