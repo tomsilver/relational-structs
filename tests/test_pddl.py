@@ -196,12 +196,7 @@ def test_run_pyperplan_planning():
     """Test the run_pyperplan_planning function with a simple PDDL domain and
     problem."""
     # Define types
-    # object_type = Type(name="object")
-    # NOTE: This will have bug
     block_type = Type(name="block")
-    # NOTE: This will not have bug
-    # block_type = Type(name="block", parent=object_type)
-
     level1_block_type = Type(name="a_block", parent=block_type)
     level2_block_type = Type(name="b_block", parent=level1_block_type)
 
