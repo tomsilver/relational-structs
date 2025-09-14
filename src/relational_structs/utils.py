@@ -8,6 +8,9 @@ from typing import (
     List,
     Sequence,
     Set,
+)
+from typing import Type as TypingType
+from typing import (
     TypeVar,
 )
 
@@ -26,6 +29,7 @@ from relational_structs.pddl import (
 def create_state_from_dict(
     data: Dict[Object, Dict[str, float]],
     type_features: Dict[Type, List[str]],
+    state_cls: TypingType[ObjectCentricState] = ObjectCentricState,
 ) -> ObjectCentricState:
     """Small utility to generate a state from a dictionary `data` of individual
     feature values for each object."""
@@ -35,7 +39,7 @@ def create_state_from_dict(
         for feat in type_features[obj.type]:
             obj_vec.append(obj_data[feat])
         state_dict[obj] = np.array(obj_vec)
-    return ObjectCentricState(state_dict, type_features)
+    return state_cls(state_dict, type_features)
 
 
 _TypedEntityTypeVar = TypeVar("_TypedEntityTypeVar", bound=TypedEntity)
