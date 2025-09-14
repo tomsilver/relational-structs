@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Collection, List, Sequence, Set, cast
+from typing import Any, Collection, List, Sequence, Set
+from typing import Type as TypingType
+from typing import cast
 
 import numpy as np
 from gymnasium.spaces import Box, Space
@@ -19,9 +21,14 @@ class ObjectCentricStateSpace(Space):
     objects are fixed.
     """
 
-    def __init__(self, types: Collection[Type]) -> None:
+    def __init__(
+        self,
+        types: Collection[Type],
+        state_cls: TypingType[ObjectCentricState] = ObjectCentricState,
+    ) -> None:
         super().__init__()
         self._types = types
+        self._state_cls = state_cls
 
     @property
     def types(self) -> Set[Type]:
@@ -48,7 +55,9 @@ class ObjectCentricStateSpace(Space):
         type_features: dict[Type, list[str]],
     ) -> ObjectCentricBoxSpace:
         """Create an ObjectCentricState given a fixed object list."""
-        return ObjectCentricBoxSpace(constant_objects, type_features)
+        return ObjectCentricBoxSpace(
+            constant_objects, type_features, state_cls=self._state_cls
+        )
 
 
 class ObjectCentricBoxSpace(Box):
@@ -59,9 +68,11 @@ class ObjectCentricBoxSpace(Box):
         self,
         constant_objects: list[Object],
         type_features: dict[Type, list[str]],
+        state_cls: TypingType[ObjectCentricState] = ObjectCentricState,
     ) -> None:
         self.constant_objects = constant_objects
         self.type_features = type_features
+        self.state_cls = state_cls
         num_dims = sum(len(type_features[o.type]) for o in constant_objects)
         shape = (num_dims,)
         low = np.full(shape, -np.inf, dtype=np.float32)
@@ -76,9 +87,7 @@ class ObjectCentricBoxSpace(Box):
         """Create an object-centric state from a vector that is in this
         space."""
         assert self.contains(vec)
-        return ObjectCentricState.from_vec(
-            vec, self.constant_objects, self.type_features
-        )
+        return self.state_cls.from_vec(vec, self.constant_objects, self.type_features)
 
     def create_markdown_description(self) -> str:
         """Create a markdown-format description of this space."""

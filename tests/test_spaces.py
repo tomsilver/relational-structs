@@ -2,7 +2,7 @@
 
 import pytest
 
-from relational_structs import ObjectCentricStateSpace, Type, utils
+from relational_structs import ObjectCentricState, ObjectCentricStateSpace, Type, utils
 
 
 def test_object_centric_state_space():
@@ -64,3 +64,21 @@ def test_object_centric_state_space():
     assert box.contains(vec)
     recovered_state = box.devectorize(vec)
     assert recovered_state.allclose(state)
+
+    # Test with subclasses of ObjectCentricState.
+    class _CustomObjectCentricState(ObjectCentricState):
+        """Custom class."""
+
+        def hello(self) -> str:
+            """For testing."""
+            return "world"
+
+    custom_space = ObjectCentricStateSpace(types, state_cls=_CustomObjectCentricState)
+    box = custom_space.to_box([obj1, obj2, obj3], type_to_feats)
+    assert box.shape == (5,)
+    vec = box.vectorize(state)
+    assert vec.shape == (5,)
+    assert box.contains(vec)
+    recovered_state = box.devectorize(vec)
+    assert recovered_state.allclose(state)
+    assert isinstance(recovered_state, _CustomObjectCentricState)
