@@ -49,6 +49,9 @@ def test_state():
         state.get(obj3, "feat3")  # feature not in list
     with pytest.raises(ValueError):
         state.get(obj1, "feat1")  # feature not in list
+    assert state.get_object_from_name("obj1") == obj1
+    with pytest.raises(ValueError):
+        assert state.get_object_from_name("not a real object")
     vec = state.vec([obj3, obj1])
     assert vec.shape == (5,)
     assert list(vec) == [1, 2, 5, 6, 7]
