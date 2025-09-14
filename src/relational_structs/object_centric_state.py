@@ -9,13 +9,13 @@ from typing import (
     Dict,
     Iterator,
     List,
-    Self,
     Sequence,
 )
 
 import numpy as np
 from prpl_utils.utils import consistent_hash
 from tabulate import tabulate
+from typing_extensions import Self
 
 from relational_structs.common import Array
 from relational_structs.objects import Object, Type
