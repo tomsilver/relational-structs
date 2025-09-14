@@ -9,6 +9,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Self,
     Sequence,
 )
 
@@ -92,14 +93,14 @@ class ObjectCentricState:
         feat_counts = [len(type_features[o.type]) for o in constant_objects][:-1]
         splits = np.cumsum(feat_counts)
         data = dict(zip(constant_objects, np.split(vec, splits)))
-        return ObjectCentricState(data, type_features)
+        return cls(data, type_features)
 
-    def copy(self) -> ObjectCentricState:
+    def copy(self) -> Self:
         """Return a copy of this state."""
         new_data = {}
         for obj in self:
             new_data[obj] = self._copy_state_value(self.data[obj])
-        return ObjectCentricState(new_data, self.type_features)
+        return type(self)(new_data, self.type_features)
 
     def _copy_state_value(self, val: Any) -> Any:
         if val is None or isinstance(val, (float, bool, int, str)):
@@ -109,7 +110,7 @@ class ObjectCentricState:
         assert hasattr(val, "copy")
         return val.copy()
 
-    def allclose(self, other: ObjectCentricState, atol: float = 1e-3) -> bool:
+    def allclose(self, other: Self, atol: float = 1e-3) -> bool:
         """Return whether this state is close enough to another one, i.e., its
         objects are the same, and the features are close."""
         if not sorted(self.data) == sorted(other.data):

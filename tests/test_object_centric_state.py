@@ -127,3 +127,32 @@ obj9                11       12       13
     # Test hashing.
     assert isinstance(hash(state), int)
     assert hash(state) != hash(state2)
+
+
+def test_state_inheritance():
+    """Tests for subclasses of ObjectCentricState."""
+
+    class _CustomObjectCentricState(ObjectCentricState):
+        """Custom class."""
+
+        def hello(self) -> str:
+            """For testing."""
+            return "world"
+
+    type1 = Type("type1")
+    type_to_features = {type1: ["feat1", "feat2"]}
+    obj3 = type1("obj3")
+    obj7 = type1("obj7")
+
+    state = _CustomObjectCentricState(
+        {
+            obj3: [1, 2],
+            obj7: [3, 4],
+        },
+        type_to_features,
+    )
+
+    state_copy = state.copy()
+    assert isinstance(state_copy, _CustomObjectCentricState)
+    assert state_copy.allclose(state)
+    assert state_copy.hello() == "world"
