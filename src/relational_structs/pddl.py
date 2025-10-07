@@ -267,7 +267,13 @@ class LiftedOperator(Operator[Variable, LiftedAtom]):
         add_effects = {atom.ground(sub) for atom in self.add_effects}
         delete_effects = {atom.ground(sub) for atom in self.delete_effects}
         return GroundOperator(
-            self.name, list(objects), preconditions, add_effects, delete_effects, self.cost, self
+            self.name,
+            list(objects),
+            preconditions,
+            add_effects,
+            delete_effects,
+            self.cost,
+            self,
         )
 
 
@@ -470,7 +476,12 @@ class PDDLDomain:
             # Get action cost if available
             action_cost = action_costs.get(name.lower())
             strips_op = LiftedOperator(
-                name, parameters, preconditions, add_effects, delete_effects, action_cost
+                name,
+                parameters,
+                preconditions,
+                add_effects,
+                delete_effects,
+                action_cost,
             )
             operators.add(strips_op)
         # Collect the final outputs.
@@ -603,7 +614,14 @@ class PDDLProblem:
             )
             for a in pyperplan_problem.goal
         }
-        return PDDLProblem(pddl_domain.name, problem_name, objects, init_atoms, goal, pddl_domain.uses_action_costs)
+        return PDDLProblem(
+            pddl_domain.name,
+            problem_name,
+            objects,
+            init_atoms,
+            goal,
+            pddl_domain.uses_action_costs,
+        )
 
     @cached_property
     def _hash(self) -> int:
