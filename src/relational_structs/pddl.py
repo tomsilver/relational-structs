@@ -388,6 +388,45 @@ def _check_uses_action_costs(pddl_str: str) -> bool:
     return False
 
 
+def _remove_action_costs_from_problem_str(problem_str: str) -> str:
+    """Remove total-cost initializations and metric sections from a problem
+    string so pyperplan can parse it."""
+    # Remove initial total-cost assignments like (= (total-cost) 0)
+    problem_str = re.sub(
+        r"\(\s*=\s*\(\s*total-cost\s*\)\s*[0-9]+\s*\)",
+        "",
+        problem_str,
+        flags=re.IGNORECASE,
+    )
+    # Remove metric section like (:metric minimize (total-cost)) possibly
+    # spanning multiple lines.
+    problem_str = re.sub(
+        r"\(:metric\b.*?total-cost.*?\)",
+        "",
+        problem_str,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # Clean up any resulting empty lines or extra whitespace
+    problem_str = re.sub(r"\n\s*\n", "\n", problem_str)
+    # If removals left unmatched closing parentheses, trim trailing ')' until
+    # parentheses are balanced. This avoids creating malformed Lisp for
+    # downstream parsers.
+    open_paren = problem_str.count("(")
+    close_paren = problem_str.count(")")
+    while close_paren > open_paren:
+        # strip trailing whitespace then a single trailing ')'
+        problem_str = problem_str.rstrip()
+        if problem_str.endswith(")"):
+            problem_str = problem_str[:-1]
+        else:
+            break
+        open_paren = problem_str.count("(")
+        close_paren = problem_str.count(")")
+    # Final cleanup of extra blank lines introduced by trimming.
+    problem_str = re.sub(r"\n\s*\n", "\n", problem_str)
+    return problem_str
+
+
 @dataclass(frozen=True)
 class PDDLDomain:
     """A PDDL domain."""
@@ -582,6 +621,7 @@ class PDDLProblem:
         pddl_domain_str = str(pddl_domain)
         if pddl_domain.uses_action_costs:
             pddl_domain_str = _remove_action_costs_from_domain_str(pddl_domain_str)
+            pddl_problem_str = _remove_action_costs_from_problem_str(pddl_problem_str)
         pyperplan_domain = _domain_str_to_pyperplan_domain(pddl_domain_str)
         # Now that we have the domain, parse the problem.
         lisp_iterator = parse_lisp_iterator(pddl_problem_str.split("\n"))
