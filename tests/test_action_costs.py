@@ -347,3 +347,39 @@ def test_cost_extraction_edge_cases() -> None:
     domain = PDDLDomain.parse(domain_str_int)
     op = next(iter(domain.operators))
     assert op.cost == 5
+
+
+def test_problem_parsing_with_total_cost_and_metric() -> None:
+    """Ensure PDDLProblem.parse handles problems that include total-cost and
+    metric."""
+    domain_str = """(define (domain test-domain)
+    (:requirements :typing :action-costs)
+    (:types location robot)
+    (:functions (total-cost) - number)
+    (:predicates (at ?r - robot ?l - location))
+    (:action move
+        :parameters (?r - robot ?from - location ?to - location)
+        :precondition (at ?r ?from)
+        :effect (and (at ?r ?to) (not (at ?r ?from)) (increase (total-cost) 1))
+    )
+)
+"""
+
+    domain = PDDLDomain.parse(domain_str)
+
+    problem_str = """(define (problem test-problem) (:domain test-domain)
+    (:objects
+        robot1 - robot
+        loc1 loc2 - location
+    )
+    (:init
+        (at robot1 loc1)
+        (= (total-cost) 0)
+    )
+    (:goal (at robot1 loc2))
+    (:metric minimize (total-cost))
+)
+"""
+
+    problem = PDDLProblem.parse(problem_str, domain)
+    assert problem.uses_action_costs is True
